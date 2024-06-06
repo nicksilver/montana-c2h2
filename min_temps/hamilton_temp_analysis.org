@@ -1,0 +1,234 @@
+#+TITLE: Hamilton Temp Analysis
+#+AUTHOR: Nick
+#+PROPERTY: header-args:R :session *R* :width 800
+
+#+BEGIN_SRC R :results value silent :exports none
+library(seas)
+
+data <- read.csv("./2243395.csv")
+plottrend <- function(data, seas.width, var.season, var.nm, start.year){
+    data.clean <- data[c('DATE', 'TMAX', 'TMIN')]
+    data.clean$DATE <- as.Date(data.clean$DATE, format="%Y-%m-%d")
+    data.clean$year <- format(data.clean$DATE, "%Y")
+    data.clean <- data.clean[data.clean$year >= start.year,]
+
+    data.clean$seas <- mkseas(x=data.clean$DATE, width=seas.width)
+    metv.seasons <- aggregate(formula(paste(var.nm, "~ seas + year")), data = data.clean, mean)
+    metv.season <- metv.seasons[metv.seasons$seas==var.season,]
+    metv.season$year <- as.Date(metv.season$year, format="%Y")
+    metv.season <- metv.season[,c("year", var.nm)]
+
+    mod <- lm(paste(var.nm, ' ~ year'), data = metv.season)
+    plot(metv.season[,'year'], metv.season[,var.nm], xlab='year', ylab=var.nm)
+    abline(mod, col='red')
+    return(mod)
+}
+#+END_SRC
+
+* Summer trend in minimum temperature starting in 1990
+
+It is true that if we look at the Hamilton weather station data from 1990 to
+present that there is a decreasing trend in minimum temperature over that time
+period. This is the time period that Bruce originally used for his evaluation.
+
+#+BEGIN_SRC R :file summer_tmin_1990.png :results file graphics :exports results
+mod1 <- plottrend(data, "DJF", "JJA", "TMIN", 1990)
+#+END_SRC
+
+#+RESULTS:
+[[file:test.png]]
+
+And the trend is fairly significant (p = 0.07). The summary statistics on that
+trend look like this:
+
+#+BEGIN_SRC R :session :exports both :results output
+summary(mod1)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+
+Call:
+lm(formula = paste(var.nm, " ~ year"), data = metv.season)
+
+Residuals:
+    Min      1Q  Median      3Q     Max
+-2.8268 -1.0954 -0.1639  0.9188  2.7730
+
+Coefficients:
+              Estimate Std. Error t value Pr(>|t|)
+(Intercept)  5.036e+01  1.159e+00  43.458   <2e-16 ***
+year        -1.672e-04  8.886e-05  -1.882   0.0711 .
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 1.482 on 26 degrees of freedom
+Multiple R-squared:  0.1199,	Adjusted R-squared:  0.086
+F-statistic: 3.541 on 1 and 26 DF,  p-value: 0.07112
+#+end_example
+
+* Summer trend in minimum temperature starting in 1980
+
+However, if we just add 10-years to the data by going back to 1980, take a look
+at what happens to the trend.
+
+#+BEGIN_SRC R :file summer_tmin_1980.png :results file graphics :exports results
+mod2 <- plottrend(data, "DJF", "JJA", "TMIN", 1980)
+#+END_SRC
+
+#+RESULTS:
+[[file:summer_tmin_1980.png]]
+
+In this case the trend is not significant, but is actually increasing:
+
+#+BEGIN_SRC R :exports both :results output
+summary(mod2)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+
+Call:
+lm(formula = paste(var.nm, " ~ year"), data = metv.season)
+
+Residuals:
+    Min      1Q  Median      3Q     Max
+-2.5871 -1.3083  0.2544  1.0256  3.2416
+
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)
+(Intercept) 4.762e+01  6.916e-01  68.847   <2e-16 ***
+year        2.908e-05  5.984e-05   0.486     0.63
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 1.542 on 36 degrees of freedom
+Multiple R-squared:  0.006515,	Adjusted R-squared:  -0.02108
+F-statistic: 0.2361 on 1 and 36 DF,  p-value: 0.63
+#+end_example
+
+* Summer trend in minimum temperature starting in 1950
+
+The standard time period for evaluating historical trends starts in 1950. If we
+use this as our starting point the trend looks very similar to the trend
+starting in 1980. Slightly increasing but statistically insignifcant.
+
+#+BEGIN_SRC R :file summer_tmin_1950.png :results file graphics :exports results
+mod3 <- plottrend(data, "DJF", "JJA", "TMIN", 1950)
+#+END_SRC
+
+#+RESULTS:
+[[file:summer_tmin_1950.png]]
+
+#+BEGIN_SRC R :exports both :results output
+summary(mod3)
+#+END_SRC
+
+All other trends (seasons and variables) are increasing at the Hamilton station
+when you evaluate them from 1950. See below for figures and statistics.
+
+* Summer trend in maximum temperature starting in 1950
+#+BEGIN_SRC R :file summer_tmax_1950.png :results file graphics :exports results
+mod4 <- plottrend(data, "DJF", "JJA", "TMAX", "1950")
+#+END_SRC
+
+#+RESULTS:
+[[file:summer_tmax_1950.png]]
+
+
+#+BEGIN_SRC R :results output :exports both
+summary(mod4)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+
+Call:
+lm(formula = paste(var.nm, " ~ year"), data = metv.season)
+
+Residuals:
+    Min      1Q  Median      3Q     Max
+-8.5280 -1.5163  0.1465  1.7059  6.0032
+
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)
+(Intercept) 8.041e+01  3.506e-01 229.351   <2e-16 ***
+year        9.101e-05  3.908e-05   2.329   0.0229 *
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 2.348 on 66 degrees of freedom
+Multiple R-squared:  0.07593,	Adjusted R-squared:  0.06193
+F-statistic: 5.423 on 1 and 66 DF,  p-value: 0.02294
+#+end_example
+
+* Winter trend in minimum temperature starting in 1950
+
+#+BEGIN_SRC R :file winter_tmin_1950.png :results file graphics :exports results
+mod5 <- plottrend(data, "DJF", "DJF", "TMIN", 1950)
+#+END_SRC
+
+#+RESULTS:
+[[file:winter_tmin_1950.png]]
+
+#+BEGIN_SRC R :results output :exports both
+summary(mod5)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+
+Call:
+lm(formula = paste(var.nm, " ~ year"), data = metv.season)
+
+Residuals:
+    Min      1Q  Median      3Q     Max
+-7.5648 -2.0013 -0.1073  2.0961  9.3177
+
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)
+(Intercept) 1.908e+01  4.756e-01  40.124   <2e-16 ***
+year        1.846e-05  5.088e-05   0.363    0.718
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 3.187 on 68 degrees of freedom
+Multiple R-squared:  0.001932,	Adjusted R-squared:  -0.01275
+F-statistic: 0.1316 on 1 and 68 DF,  p-value: 0.7179
+#+end_example
+
+* Winter trend in maximum temperature starting in 1950
+
+#+BEGIN_SRC R :file summer_tmin_1950.png :results file graphics :exports results
+mod6 <- plottrend(data, "DJF", "DJF", "TMAX", 1950)
+#+END_SRC
+
+#+RESULTS:
+[[file:summer_tmin_1950.png]]
+
+
+#+BEGIN_SRC R :results output :exports both
+summary(mod6)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+
+Call:
+lm(formula = paste(var.nm, " ~ year"), data = metv.season)
+
+Residuals:
+    Min      1Q  Median      3Q     Max
+-7.6401 -1.5973  0.1692  2.0891  6.7300
+
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)
+(Intercept) 3.705e+01  4.156e-01  89.136   <2e-16 ***
+year        3.547e-05  4.447e-05   0.798    0.428
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 2.786 on 68 degrees of freedom
+Multiple R-squared:  0.009269,	Adjusted R-squared:  -0.0053
+F-statistic: 0.6362 on 1 and 68 DF,  p-value: 0.4279
+#+end_example
